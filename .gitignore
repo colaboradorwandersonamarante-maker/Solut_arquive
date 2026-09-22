@@ -1,8 +1,10 @@
 node_modules/
-dist/
-android/
-.DS_Store
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/captures/
+android/.cxx/
 *.keystore
 *.jks
-.env
-.env.*
+.DS_Store

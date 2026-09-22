@@ -1,44 +1,62 @@
-# Solut_Arquive
+# Solut_Arquive — projeto Android (Capacitor)
 
-Aplicativo web/PWA e Android baseado no artefato original.
+Este projeto empacota a mesa de trabalho Solut_Arquive (arquivo único `www/index.html`)
+como um app Android nativo usando [Capacitor](https://capacitorjs.com).
 
-## O que foi preparado
+## Estrutura
 
-- Ícone original substituído pelo PNG fornecido em `resources/icon.png` e `public/assets/icon.png`.
-- Removida a dependência do runtime proprietário do artefato original.
-- Dados locais permanecem em `localStorage`.
-- Exportação funciona no navegador e, no Android, usa o plugin Capacitor Filesystem.
-- Bibliotecas DOCX/XLSX/PPTX são empacotadas localmente; o APK não depende de CDN para essas funções.
-- Fontes remotas do Google foram removidas para funcionamento offline.
-- Capacitor 8 configurado para Android.
-- GitHub Actions prepara e publica o APK como artefato.
-- GitHub Pages publica uma versão web de preview.
+```
+solut-arquive-app/
+├─ www/index.html              # o app (mesmo artefato publicado no chat)
+├─ android/                    # projeto Android nativo gerado pelo Capacitor
+├─ capacitor.config.ts         # appId, nome do app, pasta web
+├─ package.json
+└─ .github/workflows/android.yml   # workflow que compila o APK
+```
 
-## GitHub
+- **App ID:** `com.fullsolucions.solutarquive`
+- **Nome do app:** Solut_Arquive
 
-1. Crie um repositório vazio.
-2. Envie todo o conteúdo desta pasta.
-3. O workflow `Android APK` será executado e disponibilizará o APK de teste em **Actions > run > Artifacts**. Tags `vX.Y.Z` usam o workflow de release, desde que os quatro Secrets de assinatura estejam configurados.
-4. Ative GitHub Pages com **GitHub Actions** para obter a URL da versão web.
+## Gerar o APK automaticamente (GitHub Actions)
 
-## Build local
+1. Suba esta pasta para um repositório no GitHub (mantendo a estrutura acima).
+2. Vá em **Actions** → **Build Android APK** → **Run workflow** (ou apenas dê push
+   na branch `main`/`master` — o workflow roda sozinho).
+3. Quando o job terminar, baixe o APK em **Artifacts**:
+   - `solut-arquive-debug-apk` — instalável direto no celular para testes.
+   - `solut-arquive-release-unsigned-apk` — gerado só ao rodar manualmente
+     ("Run workflow"); precisa ser **assinado** antes de publicar na Play Store
+     (veja abaixo).
+
+## Gerar o APK localmente (opcional)
+
+Pré-requisitos: Node.js 18+, JDK 17+ e o Android SDK instalados.
 
 ```bash
-npm ci
-npm run build
-npx cap add android
-npx @capacitor/assets@3.0.5 generate --android
+npm install
 npx cap sync android
 cd android
 ./gradlew assembleDebug
+# APK gerado em: android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-O APK de debug ficará em `android/app/build/outputs/apk/debug/`.
+## Assinar o APK de release (para publicar na Play Store)
 
-## Assinatura de produção
+O workflow gera um APK de release **não assinado**. Para assinar:
 
-O workflow atual gera APK de debug. Para publicação na Play Store, deve ser adicionada uma etapa de assinatura usando um keystore guardado em GitHub Secrets. Não coloque keystores ou senhas no repositório.
+```bash
+keytool -genkey -v -keystore solut-arquive.keystore -alias solutarquive \
+  -keyalg RSA -keysize 2048 -validity 10000
 
-### Secrets para release
+apksigner sign --ks solut-arquive.keystore \
+  --out app-release-signed.apk app-release-unsigned.apk
+```
 
-Configure no repositório: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` e `ANDROID_KEY_PASSWORD`. Nunca comite o `.keystore`.
+Guarde o keystore em local seguro — ele é necessário para toda atualização futura
+do app na Play Store.
+
+## Atualizando o app depois de editar `www/index.html`
+
+Sempre que o arquivo `www/index.html` for alterado, rode `npx cap sync android`
+(ou deixe o workflow do GitHub Actions fazer isso automaticamente a cada push)
+antes de gerar um novo APK.
